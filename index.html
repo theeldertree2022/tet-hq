@@ -46,7 +46,14 @@ var userId = null, OS = null, mode = null;
 var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 var installed = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
 
-if (/^https:\/\/script\.google\.com\//.test(APP_URL)) frame.src = APP_URL;
+if (/^https:\/\/script\.google\.com\//.test(APP_URL)) {
+  /* Load HQ's page straight from its server without Google sign-in cookies, so phones signed in
+     to several Google accounts don't get "unable to open the file". Falls back to the old way. */
+  fetch(APP_URL + '?raw=1', { credentials: 'omit', redirect: 'follow' })
+    .then(function (r) { if (!r.ok) throw new Error(r.status); return r.text(); })
+    .then(function (html) { if (html.indexOf('<html') < 0 && html.indexOf('<!DOCTYPE') < 0) throw new Error('bad'); frame.srcdoc = html; })
+    .catch(function () { frame.src = APP_URL; });
+}
 else { frame.style.display = 'none'; document.getElementById('setup').style.display = 'block'; }
 
 function dismissed() { try { return Date.now() - Number(localStorage.getItem('tetBellNo') || 0) < 7 * 86400000; } catch (e) { return false; } }
@@ -77,7 +84,7 @@ if (!/PASTE_/.test(ONESIGNAL_APP_ID)) {
 
 /* HQ (inside the frame) tells us who has signed in, so pop-ups reach the right person */
 window.addEventListener('message', function (e) {
-  if (!/(\.googleusercontent\.com|script\.google\.com)$/.test(new URL(e.origin).hostname)) return;
+  if (e.origin !== location.origin && !/(\.googleusercontent\.com|script\.google\.com)$/.test(new URL(e.origin).hostname)) return;
   var d = e.data || {};
   if (d.tetHQ === 'user' && d.id) { userId = d.id; if (OS) OS.login(userId); refreshBar(); }
   if (d.tetHQ === 'logout') { userId = null; if (OS) OS.logout(); hide(); }
