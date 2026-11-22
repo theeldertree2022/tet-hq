@@ -38,7 +38,7 @@
 <script>
 /* ===== Paste your two settings here (see SETUP.md) ===== */
 var APP_URL = 'https://script.google.com/macros/s/AKfycbw4yO4YqRKZFSs_hNB5D2I9OHsKi1KOf-ARwaNKd1Mcwjv7MICwJDpPqiFixT4KKsK5/exec';
-var ONESIGNAL_APP_ID = 'PASTE_YOUR_ONESIGNAL_APP_ID_HERE';
+var ONESIGNAL_APP_ID = '6aa0f5e0-ce30-472a-9d52-b38230a58704';
 /* ======================================================= */
 
 var frame = document.getElementById('app'), bar = document.getElementById('bar'), msg = document.getElementById('msg');
@@ -73,7 +73,7 @@ if (!/PASTE_/.test(ONESIGNAL_APP_ID)) {
   OneSignalDeferred.push(async function (OneSignal) {
     var base = location.pathname.replace(/[^/]*$/, '');
     try {
-      await OneSignal.init({ appId: ONESIGNAL_APP_ID, serviceWorkerPath: base.slice(1) + 'OneSignalSDKWorker.js',
+      await OneSignal.init({ appId: ONESIGNAL_APP_ID, safari_web_id: 'web.onesignal.auto.10bba952-d3e6-4be7-b269-bd5caae877a4', serviceWorkerPath: base.slice(1) + 'OneSignalSDKWorker.js',
         serviceWorkerParam: { scope: base }, notifyButton: { enable: false } });
       OS = OneSignal;
       if (userId) await OS.login(userId);
