@@ -90,6 +90,50 @@ window.addEventListener('message', function (e) {
   if (d.tetHQ === 'logout') { userId = null; if (OS) OS.logout(); hide(); }
 });
 
+/* Back button: HQ switches screens inside the frame, so the browser never knew about them.
+   Record each screen change in this page's history, and go back a screen when Back is pressed. */
+(function () {
+  var restoring = false, lastKey = null;
+  function W() { return frame.contentWindow; }
+  function snap(S) { return { v: S.view, p: S.page || null, t: S.teamOpen || '', c: (S.chat && S.chat.ch) || '' }; }
+  function key(s) { return [s.v, s.p, s.t, s.c].join('|'); }
+  function hook() {
+    var w = W();
+    if (!w || typeof w.render !== 'function' || !w.S || w.__tetBack) return false;
+    w.__tetBack = true;
+    var orig = w.render;
+    w.render = function () {
+      var r = orig.apply(this, arguments);
+      try {
+        var s = snap(w.S), k = key(s);
+        if (k !== lastKey) {
+          if (lastKey === null) history.replaceState({ tet: s }, '');
+          else if (!restoring) history.pushState({ tet: s }, '');
+          lastKey = k;
+        }
+      } catch (e) {}
+      return r;
+    };
+    try { var s0 = snap(w.S); lastKey = key(s0); history.replaceState({ tet: s0 }, ''); } catch (e) {}
+    return true;
+  }
+  frame.addEventListener('load', function () {
+    var n = 0, iv = setInterval(function () { if (hook() || ++n > 2400) clearInterval(iv); }, 500);
+  });
+  window.addEventListener('popstate', function (e) {
+    var w = W(), s = e.state && e.state.tet;
+    if (!w || !w.S || !s) return;
+    restoring = true;
+    try {
+      w.S.page = s.p; w.S.editingPage = false; w.S.teamOpen = s.t;
+      if (w.S.chat) w.S.chat.ch = s.c;
+      lastKey = key(s);
+      w.go(s.v);
+    } catch (err) {}
+    restoring = false;
+  });
+})();
+
 document.getElementById('yes').onclick = async function () {
   hide();
   if (!OS) return;
