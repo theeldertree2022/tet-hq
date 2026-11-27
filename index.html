@@ -90,6 +90,17 @@ window.addEventListener('message', function (e) {
   if (d.tetHQ === 'logout') { userId = null; if (OS) OS.logout(); hide(); }
 });
 
+/* Install button: Android/Chrome offer a one-tap install; HQ (inside the frame) asks us to show it */
+var tetPrompt = null;
+window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); tetPrompt = e; });
+window.addEventListener('appinstalled', function () { tetPrompt = null; });
+window.tetCanInstall = function () { return !!tetPrompt; };
+window.tetInstall = function () {
+  if (!tetPrompt) return Promise.resolve(false);
+  var p = tetPrompt; tetPrompt = null; p.prompt();
+  return p.userChoice.then(function (c) { return c && c.outcome === 'accepted'; }).catch(function () { return false; });
+};
+
 /* Back button: HQ switches screens inside the frame, so the browser never knew about them.
    Record each screen change in this page's history, and go back a screen when Back is pressed. */
 (function () {
